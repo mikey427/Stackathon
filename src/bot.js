@@ -1,5 +1,3 @@
-require('dotenv').config();
-
 const { Client } = require('discord.js');
 const ytdl = require('ytdl-core');
 const yts = require('yt-search');
