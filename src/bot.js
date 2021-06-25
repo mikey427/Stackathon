@@ -1,24 +1,25 @@
 const { Client } = require('discord.js');
 const ytdl = require('ytdl-core');
 const yts = require('yt-search');
+const fs = require('fs');
+const { Readable } = require('stream');
 
 const client = new Client();
 const queue = new Map();
 const prefix = process.env.prefix;
 
-client.on('ready', () => {
-  console.log('The bot has logged in...');
-});
+const eventFiles = fs
+  .readdirSync('./events')
+  .filter(file => file.endsWith('.js'));
 
-client.once('ready', () => {
-  console.log('Ready!');
-});
-client.once('reconnecting', () => {
-  console.log('Reconnecting!');
-});
-client.once('disconnect', () => {
-  console.log('Disconnected!');
-});
+for (const file of eventFiles) {
+  const event = require(`./events/${file}`);
+  if (event.once) {
+    client.once(event.name, (...args) => event.execute(...args, client));
+  } else {
+    client.on(event.name, (...args) => event.execute(...args, client));
+  }
+}
 
 client.on('message', async message => {
   if (message.author.bot) return;
@@ -35,6 +36,8 @@ client.on('message', async message => {
   } else if (message.content.startsWith(`${prefix}stop`)) {
     stop(message, serverQueue);
     return;
+  } else if (message.content.startsWith(`${prefix}listen`)) {
+    listen(message);
   } else {
     message.channel.send('You need to enter a valid command!');
   }
@@ -49,7 +52,7 @@ const execute = async (message, serverQueue) => {
     );
   }
   const permissions = voiceChannel.permissionsFor(message.client.user);
-  if (!permissions.has('CONNET') || !permissions.has('SPEAK')) {
+  if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) {
     return message.channel.send(
       'I need the permissions to join and speak in your voice channel!'
     );
@@ -84,7 +87,6 @@ const execute = async (message, serverQueue) => {
     }
   } else {
     serverQueue.songs.push(song);
-    console.log(serverQueue.songs);
     return message.channel.send(`${song.title} has been added to the queue!`);
   }
 };
@@ -103,7 +105,7 @@ const play = async (guild, song) => {
       play(guild, serverQueue.songs[0]);
     })
     .on('error', error => console.log(error));
-  dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
+  // dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
   serverQueue.textChannel.send(`Now playing: ${song.title}`);
 };
 
@@ -126,4 +128,32 @@ const stop = async (message, serverQueue) => {
   serverQueue.songs = [];
   serverQueue.connection.dispatcher.end();
 };
+
+const listen = async message => {
+  const user = message.member;
+  const voiceChannel = user.voice.channel;
+  let connection = await voiceChannel.join();
+  message.channel.send('Listening!');
+  let active = false;
+  // console.log(connection.voice.channel.members, 'connection');
+  // client.on(connection.voice.channel.members);
+  console.log(user.voice.channel.members.prototype);
+  console.log(client);
+  // console.log(user);
+  // console.log(user.user.Speaking, 'true');
+  client.on('');
+  while (active) {
+    if (user.speaking) {
+      const audio = connection.receiver.createStream(message, {
+        mode: opus,
+        end: manual
+      });
+      audio.pipe(fs.createWriteStream('user_audio'));
+      const dispatcher = connection.play(audio);
+    } else {
+      console.log(user.user.Speaking, 'false');
+    }
+  }
+};
+
 client.login(process.env.DISCORDJS_BOT_TOKEN);
