@@ -3,14 +3,14 @@ const ytdl = require('ytdl-core');
 const yts = require('yt-search');
 const fs = require('fs');
 const { Readable } = require('stream');
-const queue = new Map();
 const prefix = process.env.prefix;
 
 const client = new Client();
 client.commands = new Collection();
 const serverID = 857733553797726249;
+client.queue = new Map();
 // console.log(queue);
-let serverQueue = queue.get(serverID);
+let serverQueue = client.queue.get(serverID);
 // console.log(serverQueue, 'serverqueue');
 
 const commandFiles = fs

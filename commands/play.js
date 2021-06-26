@@ -5,7 +5,7 @@ module.exports = {
   name: 'play',
   description: 'Plays the song you entered!',
   async execute (message, args) {
-    let queue = new Map();
+    let queue = message.client.queue;
     let serverQueue = args.serverQueue;
     let songSearch = '';
     // console.log(args, args.length);
@@ -33,6 +33,7 @@ module.exports = {
       try {
         let connection = await queueContract.voiceChannel.join();
         queueContract.connection = connection;
+        message.client.connection = connection;
         function play (guild, song) {
           const serverQueue = queue.get(guild.id);
           if (!song) {
@@ -49,7 +50,8 @@ module.exports = {
             .on('error', error => console.log(error));
           // dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
           serverQueue.textChannel.send(`Now playing: ${song.title}`);
-          queue.get(message.guild.id).connection.dispatcher = dispatcher;
+          // queue.get(message.guild.id).connection.dispatcher = dispatcher;
+          message.client.connection.dispatcher = dispatcher;
         }
         play(message.guild, queueContract.songs[0]);
       } catch (error) {

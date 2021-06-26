@@ -9,6 +9,6 @@ module.exports = {
       );
     if (!args.serverQueue)
       return message.channel.send('There is no music playing to skip!');
-    args.serverQueue.connection.dispatcher.end();
+    message.client.connection.dispatcher.end();
   }
 };
