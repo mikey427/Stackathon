@@ -5,12 +5,11 @@ const fs = require('fs');
 const { Readable } = require('stream');
 const prefix = process.env.prefix;
 
-const client = new Client();
+let client = new Client();
 client.commands = new Collection();
 const serverID = 857733553797726249;
-client.queue = new Map();
+client.serverQueue = {};
 // console.log(queue);
-let serverQueue = client.queue.get(serverID);
 // console.log(serverQueue, 'serverqueue');
 
 const commandFiles = fs
@@ -61,20 +60,19 @@ for (const file of eventFiles) {
 
 client.on('message', async message => {
   if (!message.content.startsWith(prefix) || message.author.bot) return;
-  console.log(serverQueue, 'servQueue in main');
   const args = message.content
     .slice(prefix.length)
     .trim()
     .split(/ +/);
-  args.serverQueue = serverQueue;
   const command = args.shift().toLowerCase();
 
   if (!client.commands.has(command)) return;
 
   try {
-    serverQueue = await client.commands.get(command).execute(message, args);
-    // console.log(args.serverQueue, 'serverQueue after play');
-    // console.log(queue, 'queue after play');
+    client.serverQueue = await client.commands
+      .get(command)
+      .execute(message, args);
+    console.log(client.serverQueue, 'client.serveradad');
   } catch (error) {
     console.error(error);
     message.reply('There was an error trying to execute that command!');

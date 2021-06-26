@@ -5,15 +5,19 @@ module.exports = {
   name: 'play',
   description: 'Plays the song you entered!',
   async execute (message, args) {
-    let serverQueue = message.client.serverQueue;
-    console.log(serverQueue);
+    let queue = message.client.queue;
+    let serverQueue = args.serverQueue;
     let songSearch = '';
+    // console.log(args, args.length);
     for (let i = 0; i <= args.length - 1; i++) {
       songSearch = songSearch + ' ' + args[i];
     }
+    // console.log(songSearch);
     let video = await yts(songSearch);
+    // console.log(songSearch, video.all[0].url, 'song search and video');
     const song = video.all[0];
-    if (!Object.keys(message.client.serverQueue).length) {
+    // console.log(song);
+    if (!serverQueue) {
       const queueContract = {
         textChannel: message.channel,
         voiceChannel: message.member.voice.channel,
@@ -22,15 +26,19 @@ module.exports = {
         volume: 5,
         playing: true
       };
-      serverQueue = queueContract;
-      serverQueue.songs.push(song);
+      queue.set(message.guild.id, queueContract);
+      // console.log(queue.get(message.guild.id).songs, 'id');
+      queue.get(message.guild.id).songs.push(song);
+      // console.log(queue.get(message.guild.id).songs, 'id2');
       try {
-        let connection = await message.member.voice.channel.join();
-        serverQueue.connection = connection;
+        let connection = await queueContract.voiceChannel.join();
+        queueContract.connection = connection;
+        message.client.connection = connection;
         function play (guild, song) {
+          const serverQueue = queue.get(guild.id);
           if (!song) {
             serverQueue.voiceChannel.leave();
-            message.client.serverQueue = {};
+            queue.delete(guild.id);
             return;
           }
           const dispatcher = serverQueue.connection
@@ -40,20 +48,24 @@ module.exports = {
               play(guild, serverQueue.songs[0]);
             })
             .on('error', error => console.log(error));
+          // dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
           serverQueue.textChannel.send(`Now playing: ${song.title}`);
-          serverQueue.connection.dispatcher = dispatcher;
+          // queue.get(message.guild.id).connection.dispatcher = dispatcher;
+          message.client.connection.dispatcher = dispatcher;
         }
-        play(message.guild.id, serverQueue.songs[0]);
+        play(message.guild, queueContract.songs[0]);
       } catch (error) {
         console.log(error);
-        message.client.serverQueue = {};
+        queue.delete(message.guild.id);
         return message.channel.send(error);
       }
     } else {
       serverQueue.songs.push(song);
       return message.channel.send(`${song.title} has been added to the queue!`);
     }
-    message.client.serverQueue = serverQueue;
-    return message.client.serverQueue;
+    // console.log(queue, 'queue');
+    // console.log(serverQueue, 'serverqueue');
+    return queue.get(message.guild.id);
   }
 };
+//queue and serverQueue => ISSUE
